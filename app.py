@@ -202,14 +202,17 @@ def fix_code_with_ai(original_code, error_message, prompt):
     if missing_libs:
         libs_note = f"\n\nNOT: Bu kutuphaneler requirements.txt'de VAR: {', '.join(missing_libs)}. KODU bu kutuphaneleri kullanmadan YENIDEN YAZ. Alternatif standart kutuphaneler kullan (ornegin: cv2 yerine PIL/Pillow kullan)."
     
-    system_msg = """Sen bir kod duzeltme uzmanisin. 
-    GOREVIN: Hatali kodu analiz et ve calisir hale getir.
+    system_msg = """Sen bir kod duzeltme uzmanisin. HATAYI GOR VE DUZELT.
     
-    ONEMLI:
-    - Eger eksik kutuphane hatasi varsa, O kutuphaneyi kullanmadan alternatif cozum uret
-    - Ornek: cv2 yerine PIL (Pillow) kullan
-    - Ornek: ozel kutuphane yerine standart Python kutuphaneleri kullan
-    - Kodun calisir olmasi lazim
+    GOREVIN: Verilen hata mesajini analiz et, hataya sebep olan kodu bul ve DUZELT.
+    
+    ONEMLI KURALLAR:
+    1. Hata mesajini DIKKATLE OKU - neyin hatali oldugunu anla
+    2. Eger 'cannot identify image file' hatasi varsa -> PIL.Image.open() kullan, file.getvalue() ile oku
+    3. Eger 'No module named' hatasi varsa -> O kutuphaneyi KULLANMA, alternatif bul
+    4. Hatali satiri bul ve DUZELT
+    5. Kodun geri kalanini koru, sadece hatali kismi degistir
+    6. Calisir kod uret
     
     SADECE duzeltilmis kodu ver, aciklama yok!"""
     
@@ -269,6 +272,7 @@ if "page" not in st.session_state: st.session_state.page = "home"
 if "generated_code" not in st.session_state: st.session_state.generated_code = None
 if "show_preview" not in st.session_state: st.session_state.show_preview = False
 if "fix_attempt" not in st.session_state: st.session_state.fix_attempt = 0
+if "last_error" not in st.session_state: st.session_state.last_error = ""
 
 # =============================================================================
 # UI
@@ -383,27 +387,13 @@ elif st.session_state.page == "create":
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns([1, 1])
-        if col1.button("❌ Uygulamayi Kapat", use_container_width=True):
+        if st.button("❌ Uygulamayi Kapat", use_container_width=True):
             st.session_state.show_preview = False
             st.rerun()
-        if col2.button("🔄 Tekrar Dene (Hata Varsa)", use_container_width=True):
-            st.session_state.fix_attempt += 1
-            with st.spinner("Kod duzeltiliyor..."):
-                fixed_code, err = fix_code_with_ai(
-                    st.session_state.generated_code,
-                    "Onceki calistirmada hata olustu",
-                    st.session_state.last_prompt
-                )
-                if fixed_code:
-                    st.session_state.generated_code = fixed_code
-                    save_app(st.session_state.user["user_id"], "Duzeltilmis", "Oto duzeltme", st.session_state.last_prompt, fixed_code, False)
-                    st.success("Kod duzeltildi!")
-                    st.rerun()
-                else:
-                    st.error("Duzeltme basarisiz")
         
         # Calistirma alani
+        error_occurred = False
+        
         with st.container(border=True):
             try:
                 code_to_run = st.session_state.generated_code
@@ -412,11 +402,35 @@ elif st.session_state.page == "create":
                 clean_code_exec = '\n'.join(filtered_lines)
                 exec(clean_code_exec)
             except Exception as e:
+                error_occurred = True
                 error_msg = str(e)
-                st.error(f"⚠️ Calistirma Hatasi: {error_msg}")
-                st.code(traceback.format_exc())
+                error_full = traceback.format_exc()
+                st.session_state.last_error = error_full
                 
-                st.warning("Yukaridaki 'Tekrar Dene' butonuna tiklayarak kodun duzeltilmesini saglayabilirsiniz.")
+                st.error(f"⚠️ Hata: {error_msg}")
+                with st.expander("Hata Detaylari (Teknik)"):
+                    st.code(error_full)
+                
+                st.warning("👆 Asagidaki butona tiklayin, AI hatayi duzeltecek.")
+        
+        # Hata olduysa AI ile duzelt butonu
+        if error_occurred:
+            st.divider()
+            if st.button("🔄 AI ile Hatayi Duzelt ve Tekrar Calistir", type="primary", use_container_width=True):
+                with st.spinner("AI hata analizi yapip kodu duzeltiyor..."):
+                    fixed_code, err = fix_code_with_ai(
+                        st.session_state.generated_code,
+                        st.session_state.get('last_error', 'Hata olustu'),
+                        st.session_state.last_prompt
+                    )
+                    if fixed_code:
+                        st.session_state.generated_code = fixed_code
+                        st.session_state.fix_attempt += 1
+                        save_app(st.session_state.user["user_id"], f"Duzeltilmis_v{st.session_state.fix_attempt}", "AI ile otomatik duzeltme", st.session_state.last_prompt, fixed_code, False)
+                        st.success(f"✅ Kod duzeltildi! Deneme #{st.session_state.fix_attempt}")
+                        st.rerun()
+                    else:
+                        st.error(f"Duzeltme basarisiz: {err}")
     
     # NORMAL MOD
     else:
@@ -453,7 +467,7 @@ elif st.session_state.page == "create":
                         st.session_state.generated_code = code
                         st.session_state.show_preview = False
                         st.session_state.fix_attempt = 0
-                        st.success(f"✅ Kod basariyla olusturuldu! (Deneme: {st.session_state.fix_attempt + 1})")
+                        st.success(f"✅ Kod basariyla olusturuldu!")
                         st.rerun()
                     else:
                         st.error(f"Hata: {error}")
