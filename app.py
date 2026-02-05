@@ -9,7 +9,14 @@ import hashlib
 import secrets
 from datetime import datetime
 
-st.set_page_config(page_title="AppFab", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="KodUret", page_icon="⚡", layout="wide")
+
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
+
+# ... (rest of the code same as before)
+
+st.title("⚡ KodUret")
+st.caption("Yapay zeka ile aninda kod olustur")
 
 # OpenAI Key
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
@@ -319,4 +326,5 @@ elif st.session_state.page == "myapps":
             if st.button("❌ Kapat"):
                 st.session_state.run_code = None
                 st.rerun()
+
 
