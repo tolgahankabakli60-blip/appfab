@@ -1,5 +1,5 @@
 """
-KodUret - AI Kod Oluşturucu
+KodUret - AI Kod Olusturucu
 """
 
 import streamlit as st
@@ -12,18 +12,6 @@ from datetime import datetime
 st.set_page_config(page_title="KodUret", page_icon="⚡", layout="wide")
 
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
-
-# ... (rest of the code same as before)
-
-st.title("⚡ KodUret")
-st.caption("Yapay zeka ile aninda kod olustur")
-
-# OpenAI Key
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
-
-# =============================================================================
-# DATABASE
-# =============================================================================
 
 def get_db():
     conn = sqlite3.connect("appfab.db", check_same_thread=False)
@@ -47,22 +35,18 @@ def init_db():
 
 init_db()
 
-# =============================================================================
-# AUTH & DB FUNCS
-# =============================================================================
-
 def create_user(email, password, username):
     conn = get_db()
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE email=?", (email,))
     if c.fetchone():
-        return False, "Email kayıtlı"
+        return False, "Email kayitli"
     user_id = f"user_{secrets.token_hex(8)}"
     pwd_hash = hashlib.sha256(password.encode()).hexdigest()
     c.execute("INSERT INTO users VALUES (?,?,?,?,10,0)", (user_id, email, username, pwd_hash))
     conn.commit()
     conn.close()
-    return True, "Kayıt başarılı! 10 kredi hediye"
+    return True, "Kayit basarili! 10 kredi hediye"
 
 def login_user(email, password):
     conn = get_db()
@@ -111,10 +95,6 @@ def get_user_apps(user_id):
     conn.close()
     return apps
 
-# =============================================================================
-# AI GENERATOR
-# =============================================================================
-
 def generate_app(prompt):
     if not OPENAI_API_KEY:
         return None, "API Key eksik"
@@ -123,8 +103,8 @@ def generate_app(prompt):
         payload = {
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "Sen Streamlit uzmanısın. SADECE çalışan Python kodu üret. st.set_page_config ile başla. Modern UI. SADECE kod, yorum yok."},
-                {"role": "user", "content": f"Streamlit app oluştur: {prompt}"}
+                {"role": "system", "content": "Sen Streamlit uzmanisin. SADECE calisan Python kodu uret. st.set_page_config ile basla. Modern UI. SADECE kod, aciklama yok."},
+                {"role": "user", "content": f"Streamlit app olustur: {prompt}"}
             ],
             "temperature": 0.7,
             "max_tokens": 2000
@@ -133,7 +113,6 @@ def generate_app(prompt):
         response.raise_for_status()
         code = response.json()["choices"][0]["message"]["content"]
         
-        # Temizle
         if code.startswith("```python"): code = code[9:]
         elif code.startswith("```"): code = code[3:]
         if code.endswith("```"): code = code[:-3]
@@ -141,190 +120,131 @@ def generate_app(prompt):
     except Exception as e:
         return None, str(e)
 
-# =============================================================================
-# SESSION
-# =============================================================================
-
 if "user" not in st.session_state: st.session_state.user = None
 if "page" not in st.session_state: st.session_state.page = "home"
-if "run_code" not in st.session_state: st.session_state.run_code = None
+if "generated_code" not in st.session_state: st.session_state.generated_code = None
 
-# =============================================================================
-# UI
-# =============================================================================
+st.title("⚡ KodUret")
+st.caption("Yapay zeka ile aninda kod olustur")
 
-st.title("⚡ AppFab")
-st.caption("Yapay zeka ile anında app oluştur")
-
-# Sidebar
 with st.sidebar:
-    st.header("Menü")
+    st.header("Menu")
     if st.session_state.user:
         user = get_user(st.session_state.user["user_id"])
         st.write(f"👤 {user['username']}")
         st.write(f"💎 {user['credits']} Kredi")
-        if st.button("🏠 Ana Sayfa", use_container_width=True): st.session_state.page = "home"; st.rerun()
-        if st.button("✨ App Üret", use_container_width=True): st.session_state.page = "create"; st.rerun()
-        if st.button("📱 App'lerim", use_container_width=True): st.session_state.page = "myapps"; st.rerun()
-        if st.button("🚪 Çıkış", use_container_width=True): st.session_state.user = None; st.rerun()
+        if st.button("Ana Sayfa", use_container_width=True): st.session_state.page = "home"; st.rerun()
+        if st.button("Kod Uret", use_container_width=True): st.session_state.page = "create"; st.rerun()
+        if st.button("Kodlarim", use_container_width=True): st.session_state.page = "myapps"; st.rerun()
+        if st.button("Cikis", use_container_width=True): st.session_state.user = None; st.rerun()
     else:
-        if st.button("🏠 Ana Sayfa", use_container_width=True): st.session_state.page = "home"; st.rerun()
-        if st.button("🔐 Giriş / Kayıt", use_container_width=True): st.session_state.page = "auth"; st.rerun()
-
-# =============================================================================
-# PAGES
-# =============================================================================
+        if st.button("Ana Sayfa", use_container_width=True): st.session_state.page = "home"; st.rerun()
+        if st.button("Giris / Kayit", use_container_width=True): st.session_state.page = "auth"; st.rerun()
 
 if st.session_state.page == "home":
-    st.header("🚀 Hoş Geldiniz")
-    st.write("Tek cümleyle hesap makinesi, BMI hesaplayıcı, todo list ve daha fazlasını oluşturun.")
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("⚡ Hızlı", "30 sn")
-    col2.metric("🤖 AI", "GPT-4")
-    col3.metric("📱 Mobil", "Uyumlu")
+    st.header("Hos Geldiniz")
+    st.write("Tek cumleyle hesap makinesi, BMI hesaplayici olusturun.")
     
     if not st.session_state.user:
-        if st.button("🔐 Başlamak için Giriş Yap", type="primary"):
+        if st.button("Baslamak icin Giris Yap", type="primary"):
             st.session_state.page = "auth"
             st.rerun()
 
 elif st.session_state.page == "auth":
-    st.header("🔐 Giriş / Kayıt")
-    tab1, tab2 = st.tabs(["Giriş Yap", "Kayıt Ol"])
+    st.header("Giris / Kayit")
+    tab1, tab2 = st.tabs(["Giris Yap", "Kayit Ol"])
     
     with tab1:
         with st.form("login"):
-            email = st.text_input("📧 Email")
-            password = st.text_input("🔒 Şifre", type="password")
-            if st.form_submit_button("Giriş Yap", use_container_width=True):
+            email = st.text_input("Email")
+            password = st.text_input("Sifre", type="password")
+            if st.form_submit_button("Giris Yap", use_container_width=True):
                 ok, user = login_user(email, password)
                 if ok:
                     st.session_state.user = user
-                    st.success("Giriş başarılı!")
+                    st.success("Giris basarili!")
                     st.rerun()
                 else:
-                    st.error("Hatalı giriş")
+                    st.error("Hatali giris")
     
     with tab2:
         with st.form("register"):
-            username = st.text_input("👤 Kullanıcı Adı")
-            email = st.text_input("📧 Email")
-            password = st.text_input("🔒 Şifre", type="password")
-            if st.form_submit_button("Kayıt Ol", use_container_width=True):
+            username = st.text_input("Kullanici Adi")
+            email = st.text_input("Email")
+            password = st.text_input("Sifre", type="password")
+            if st.form_submit_button("Kayit Ol", use_container_width=True):
                 ok, msg = create_user(email, password, username)
-                if ok:
-                    st.success(msg)
-                else:
-                    st.error(msg)
+                if ok: st.success(msg)
+                else: st.error(msg)
 
 elif st.session_state.page == "create":
     if not st.session_state.user:
-        st.error("Lütfen giriş yapın")
+        st.error("Lutfen giris yapin")
         st.stop()
     
-    st.header("✨ Yeni App Üret")
+    st.header("Yeni Kod Uret")
     user = get_user(st.session_state.user["user_id"])
-    st.write(f"💎 Krediniz: {user['credits']}")
+    st.write(f"Krediniz: {user['credits']}")
     
-    prompt = st.text_area("Ne yapmak istiyorsunuz?", placeholder="Örn: Basit hesap makinesi yap. Toplama, çıkarma, çarpma, bölme olsun.", height=100)
+    prompt = st.text_area("Ne yapmak istiyorsunuz?", placeholder="Orn: Basit hesap makinesi yap. Toplama, cikarma, carpma, bolme olsun.", height=100)
     col1, col2 = st.columns(2)
-    app_name = col1.text_input("App Adı", "Benim App'im")
-    is_public = col2.checkbox("Herkese Açık")
+    app_name = col1.text_input("App Adi", "Benim App'im")
+    is_public = col2.checkbox("Herkes Acik")
     
-    if st.button("🚀 APP ÜRET", type="primary", use_container_width=True):
+    if st.button("KOD URET", type="primary", use_container_width=True):
         if prompt:
             if deduct_credit(st.session_state.user["user_id"]):
-                with st.spinner("AI düşünüyor..."):
+                with st.spinner("AI dusunuyor..."):
                     code, error = generate_app(prompt)
                 
                 if error:
                     st.error(error)
                 else:
-                    # Kaydet
                     save_app(st.session_state.user["user_id"], app_name, prompt[:100], prompt, code, is_public)
-                    st.success("✅ App oluşturuldu!")
-                    
-                    # Kodu göster
-                    st.subheader("📝 Oluşturulan Kod")
-                    st.code(code, language="python")
-                    
-                    # İndir
-                    st.download_button("📥 İndir (.py)", code, file_name="app.py")
-                    
-                    # 🎯 ÖNEMLİ: Çalıştır butonu
-                    st.divider()
-                    st.subheader("🎮 App'i Hemen Çalıştır")
-                    
-                    if st.button("▶️ Şimdi Çalıştır", type="primary", use_container_width=True):
-                        st.session_state.run_code = code
-                        st.rerun()
+                    st.session_state.generated_code = code
+                    st.success("Kod olusturuldu!")
             else:
                 st.error("Krediniz bitti!")
         else:
-            st.error("Lütfen açıklama yazın")
-
-    # Çalıştırılan kod burada gösterilecek
-    if st.session_state.run_code:
+            st.error("Lutfen aciklama yazin")
+    
+    if st.session_state.generated_code:
         st.divider()
-        st.subheader("🎯 App Çalışıyor")
-        st.info("Aşağıda üretilen app çalışıyor. İstediğiniz gibi kullanın!")
+        st.subheader("Olusturulan Kod")
+        st.code(st.session_state.generated_code, language="python")
+        st.download_button("Indir (.py)", st.session_state.generated_code, file_name="app.py")
         
-        # Kodu çalıştır (güvenli modda)
-        code_to_run = st.session_state.run_code
+        st.divider()
+        st.subheader("Kodu Calistir")
         
-        # st.set_page_config'i kaldır (zaten var)
-        lines = code_to_run.split('\n')
-        filtered_lines = [line for line in lines if 'set_page_config' not in line]
-        clean_code = '\n'.join(filtered_lines)
-        
-        try:
-            # Kodu çalıştır
-            exec(clean_code)
-        except Exception as e:
-            st.error(f"Çalıştırma hatası: {e}")
-        
-        if st.button("❌ Kapat", use_container_width=True):
-            st.session_state.run_code = None
-            st.rerun()
+        # CHECKBOX versiyonu - buton degil!
+        if st.checkbox("Calistirmayi goster", key="run_checkbox"):
+            st.info("Asagida kod calisiyor:")
+            
+            try:
+                code_to_run = st.session_state.generated_code
+                lines = code_to_run.split('\n')
+                filtered_lines = [line for line in lines if 'set_page_config' not in line]
+                clean_code = '\n'.join(filtered_lines)
+                
+                with st.container():
+                    exec(clean_code)
+            except Exception as e:
+                st.error(f"Calistirma hatasi: {e}")
 
 elif st.session_state.page == "myapps":
     if not st.session_state.user:
-        st.error("Lütfen giriş yapın")
+        st.error("Lutfen giris yapin")
         st.stop()
     
-    st.header("📱 Benim App'lerim")
+    st.header("Kodlarim")
     apps = get_user_apps(st.session_state.user["user_id"])
     
     if not apps:
-        st.info("Henüz app yok.")
+        st.info("Henuz kod yok.")
     else:
-        for app in apps:
-            with st.expander(f"{'🌐' if app['is_public'] else '🔒'} {app['name']}"):
-                st.write(f"**Tarih:** {app['created_at']}")
+        for i, app in enumerate(apps):
+            with st.expander(f"{'Acik' if app['is_public'] else 'Gizli'} - {app['name']}"):
+                st.write(f"Tarih: {app['created_at']}")
                 st.code(app['code'], language="python")
-                
-                col1, col2 = st.columns(2)
-                col1.download_button("📥 İndir", app['code'], file_name=f"{app['name']}.py", key=f"dl_{app['app_id']}")
-                
-                # Kaydedilmiş app'i de çalıştır
-                if col2.button("▶️ Çalıştır", key=f"run_{app['app_id']}"):
-                    st.session_state.run_code = app['code']
-                    st.rerun()
-        
-        # Çalıştırma alanı (sayfa sonunda)
-        if st.session_state.run_code:
-            st.divider()
-            st.subheader("🎯 App Çalışıyor")
-            try:
-                lines = st.session_state.run_code.split('\n')
-                filtered = [line for line in lines if 'set_page_config' not in line]
-                exec('\n'.join(filtered))
-            except Exception as e:
-                st.error(f"Hata: {e}")
-            
-            if st.button("❌ Kapat"):
-                st.session_state.run_code = None
-                st.rerun()
-
-
+                st.download_button("Indir", app['code'], file_name=f"{app['name']}.py", key=f"dl_{i}")
