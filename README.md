@@ -1,4 +1,4 @@
-# ⚡ AppFab - AI App Generator
+# ⚡ KodUret - AI Kod Oluşturucu
 
 **Prompt yaz → App oluştur → Anında kullan**
 
@@ -123,3 +123,4 @@ MIT License - Özgürce kullan, değiştir, paylaş.
 ---
 
 **Hazır mısın?** 🚀 [Hemen Dene](https://appfab.streamlit.app)
+
