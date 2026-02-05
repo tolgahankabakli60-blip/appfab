@@ -197,6 +197,8 @@ def fix_code_with_ai(original_code, error_message, prompt):
         missing_libs.append("Pillow")
     if "No module named 'matplotlib'" in error_message:
         missing_libs.append("matplotlib")
+    if "No module named 'openai'" in error_message:
+        missing_libs.append("openai")
     
     libs_note = ""
     if missing_libs:
@@ -210,6 +212,7 @@ def fix_code_with_ai(original_code, error_message, prompt):
     1. Hata mesajini DIKKATLE OKU - neyin hatali oldugunu anla
     2. Eger 'cannot identify image file' hatasi varsa -> PIL.Image.open() kullan, file.getvalue() ile oku
     3. Eger 'No module named' hatasi varsa -> O kutuphaneyi KULLANMA, alternatif bul
+       - openai hatasi varsa: openai kullanma, standard requests kullan VEYA hic API kullanma
     4. Hatali satiri bul ve DUZELT
     5. Kodun geri kalanini koru, sadece hatali kismi degistir
     6. Calisir kod uret
@@ -272,7 +275,6 @@ if "page" not in st.session_state: st.session_state.page = "home"
 if "generated_code" not in st.session_state: st.session_state.generated_code = None
 if "show_preview" not in st.session_state: st.session_state.show_preview = False
 if "fix_attempt" not in st.session_state: st.session_state.fix_attempt = 0
-if "last_error" not in st.session_state: st.session_state.last_error = ""
 
 # =============================================================================
 # UI
@@ -393,6 +395,7 @@ elif st.session_state.page == "create":
         
         # Calistirma alani
         error_occurred = False
+        error_full = ""
         
         with st.container(border=True):
             try:
@@ -405,15 +408,15 @@ elif st.session_state.page == "create":
                 error_occurred = True
                 error_msg = str(e)
                 error_full = traceback.format_exc()
-                st.session_state.last_error = error_full
+                st.session_state.last_error = error_full  # Hatayi kaydet
                 
                 st.error(f"⚠️ Hata: {error_msg}")
                 with st.expander("Hata Detaylari (Teknik)"):
                     st.code(error_full)
                 
-                st.warning("👆 Asagidaki butona tiklayin, AI hatayi duzeltecek.")
+                st.warning("👆 Yukaridaki '🔄 Tekrar Dene' butonuna tiklayin. AI hatayi analiz edip duzeltecek.")
         
-        # Hata olduysa AI ile duzelt butonu
+        # Hata olduysa ve kullanici tekrar denemek isterse
         if error_occurred:
             st.divider()
             if st.button("🔄 AI ile Hatayi Duzelt ve Tekrar Calistir", type="primary", use_container_width=True):
@@ -467,7 +470,7 @@ elif st.session_state.page == "create":
                         st.session_state.generated_code = code
                         st.session_state.show_preview = False
                         st.session_state.fix_attempt = 0
-                        st.success(f"✅ Kod basariyla olusturuldu!")
+                        st.success(f"✅ Kod basariyla olusturuldu! (Deneme: {st.session_state.fix_attempt + 1})")
                         st.rerun()
                     else:
                         st.error(f"Hata: {error}")
@@ -503,20 +506,3 @@ elif st.session_state.page == "myapps":
         st.stop()
     
     st.header("📂 Kayitli Uygulamalarim")
-    apps = get_user_apps(st.session_state.user["user_id"])
-    
-    if not apps:
-        st.info("Henuz kayitli uygulama yok.")
-    else:
-        for i, app in enumerate(apps):
-            with st.expander(f"{'🌐' if app['is_public'] else '🔒'} {app['name']} | {app['created_at'][:10]}"):
-                st.write(f"**Aciklama:** {app['description']}")
-                
-                col1, col2 = st.columns(2)
-                col1.download_button("📥 Indir", app['code'], file_name=f"{app['name']}.py", key=f"dl_{i}")
-                
-                if col2.button("▶️ Calistir", key=f"run_{i}"):
-                    st.session_state.generated_code = app['code']
-                    st.session_state.show_preview = True
-                    st.session_state.page = "create"
-                    st.rerun()
