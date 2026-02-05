@@ -1,6 +1,5 @@
 """
-AppFab - AI App Generator
-Telefon ve PC'de çalışan basit versiyon
+KodUret - AI Kod Oluşturucu
 """
 
 import streamlit as st
@@ -320,3 +319,4 @@ elif st.session_state.page == "myapps":
             if st.button("❌ Kapat"):
                 st.session_state.run_code = None
                 st.rerun()
+
